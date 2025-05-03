@@ -35,10 +35,10 @@ python3 utils/create_datasets.py \
 python3 model/train.py 
 --train_data data/datasets/train.pkl 
 --val_data data/datasets/val.pkl 
---train_fraction 0.002 # set to 1. to train on entire dataset
---val_fraction 0.02 # set to 1. to validate on entire dataset
+--train_fraction 0.02 # set to 1. to train on entire dataset
+--val_fraction 0.2 # set to 1. to validate on entire dataset
 --batch_size 256 
---num_epochs 50 
+--num_epochs 200 
 --learning_rate 0.001 
 --flank 5000 # 5000 is for SpliceAI_10k model
 --seed 1809 
