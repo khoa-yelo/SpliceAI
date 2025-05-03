@@ -176,11 +176,11 @@ def train(args, logger):
 if __name__ == "__main__":
     
     args = parse_args()
+    os.makedirs(args.output_dir, exist_ok=True)
     logging.basicConfig(level=logging.INFO,
                         handlers=[logging.FileHandler(os.path.join(args.output_dir, "train.log")),
                                     logging.StreamHandler(sys.stdout)],
                         format="%(asctime)s - %(levelname)s - %(message)s")
     logger = logging.getLogger(__name__)
     logger.info("Starting training...")
-    os.makedirs(args.output_dir, exist_ok=True)
     train(args, logger)
