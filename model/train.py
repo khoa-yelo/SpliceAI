@@ -4,7 +4,7 @@ import os
 import sys
 
 import torch
-import torch.functional as F
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 import numpy as np
@@ -98,8 +98,8 @@ def run_epoch(model, loader, criterion, optimizer, device, train=True):
                 optimizer.step()
 
             total_loss += loss.item()
-            all_logits.append(outputs.cpu().numpy())
-            all_targets.append(targets.cpu().numpy())
+            all_logits.append(outputs.detach().cpu().numpy())
+            all_targets.append(targets.detach().cpu().numpy())
 
     logits = np.concatenate(all_logits)
     targets = np.concatenate(all_targets)
@@ -119,8 +119,20 @@ def train(args, logger):
     train_loader, val_loader, train_dataset, val_dataset = get_dataloader(args)
     logger.info("Loaded datasets: %d training samples, %d validation samples", len(train_dataset), len(val_dataset))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.info("Using device: %s", device)
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
     model = get_model(args).to(device)
     class_weights = compute_class_weights(train_dataset, num_classes=3).to(device)
+    logger.info("Class weights: %s", class_weights)
+    logger.info("Model architecture: %s", model.__class__.__name__)
+    logger.info("Model parameters: %d", sum(p.numel() for p in model.parameters() if p.requires_grad))
+    logger.info("Training with batch size: %d", args.batch_size)
+    logger.info("Training with learning rate: %.6f", args.learning_rate)
+    logger.info("Training with num epochs: %d", args.num_epochs)
+    logger.info("Training with flank size: %d", args.flank)
+    logger.info("Training with random seed: %d", args.seed)
+    logger.info("Training with output directory: %s", args.output_dir)
     criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
@@ -162,11 +174,13 @@ def train(args, logger):
    
 
 if __name__ == "__main__":
+    
+    args = parse_args()
     logging.basicConfig(level=logging.INFO,
-                        handlers=[logging.FileHandler("spliceAI_train.log"), logging.StreamHandler(sys.stdout)],
-                         format="%(asctime)s - %(levelname)s - %(message)s")
+                        handlers=[logging.FileHandler(os.path.join(args.output_dir, "train.log")),
+                                    logging.StreamHandler(sys.stdout)],
+                        format="%(asctime)s - %(levelname)s - %(message)s")
     logger = logging.getLogger(__name__)
     logger.info("Starting training...")
-    args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
     train(args, logger)
