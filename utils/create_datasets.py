@@ -188,7 +188,7 @@ def encode_and_block(transcripts, fasta, chromosome_map, flank, block_len=5000):
 
             y_neither = 1 - y_donor - y_acceptor
             # stack 3 y_* to single output
-            y_out = np.stack([y_donor, y_acceptor, y_neither], axis=0)
+            y_out = np.stack([y_neither, y_donor, y_acceptor], axis=0)
             # trim Y_out to length block_len only, trim S start and end each
             y_out = y_out[:,S:S+block_len].T
             
