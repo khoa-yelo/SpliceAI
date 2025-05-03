@@ -95,7 +95,7 @@ class SpliceAI_10k(nn.Module):
         # final projections
         x = self.final_conv1(x) + skip
         x = self.final_conv2(x)
-        x = F.softmax(x, dim=1)
+        # x = F.softmax(x, dim=1)  # since CrossEntropyLoss is used, we don't need to apply softmax here
         if x.size(2) > 2 * self.crop:
             x = x[:, :, self.crop : -self.crop]
         return x
@@ -139,7 +139,7 @@ class SpliceAI_2k(nn.Module):
         # final projections
         x = self.final_conv1(x) + skip
         x = self.final_conv2(x)
-        x = F.softmax(x, dim=1)
+        # x = F.softmax(x, dim=1)  # since CrossEntropyLoss is used, we don't need to apply softmax here
         if x.size(2) > 2 * self.crop:
             x = x[:, :, self.crop : -self.crop]
         return x
@@ -177,7 +177,7 @@ class SpliceAI_400nt(nn.Module):
         # final projections
         x = self.final_conv1(x) + skip
         x = self.final_conv2(x)
-        x = F.softmax(x, dim=1)
+        # x = F.softmax(x, dim=1)  # since CrossEntropyLoss is used, we don't need to apply softmax here
         if x.size(2) > 2 * self.crop:
             x = x[:, :, self.crop : -self.crop]
         return x
@@ -210,7 +210,7 @@ class SpliceAI_80nt(nn.Module):
         x = self.rb11_1(x)
         x = self.final_conv1(x) + skip
         x = self.final_conv2(x)
-        x = F.softmax(x, dim=1)
+        # x = F.softmax(x, dim=1) # since CrossEntropyLoss is used, we don't need to apply softmax here
         # crop flanking positions so output length = input_length - 2*crop
         if x.size(2) > 2 * self.crop:
             x = x[:, :, self.crop:-self.crop]
