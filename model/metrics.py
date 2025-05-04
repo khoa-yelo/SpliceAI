@@ -1,5 +1,6 @@
 
 from sklearn.metrics import average_precision_score
+import numpy as np
 
 def topk_accuracy(probs, targets_onehot):
     topk_accs = []
@@ -21,3 +22,13 @@ def pr_auc(probs, targets_onehot):
         auc = average_precision_score(targets_onehot[:, c], probs[:, c])
         aucs.append(auc)
     return aucs
+
+def to_serializable(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {k: to_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [to_serializable(v) for v in obj]
+    else:
+        return obj

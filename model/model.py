@@ -14,7 +14,8 @@ class ResidualBlock(nn.Module):
       BatchNorm -> ReLU -> Conv(N, W, D)
       Skip connection adds input to output
     """
-    def __init__(self, channels, kernel_size, dilation):
+    def __init__(self, channels, kernel_size, dilation, dropout=0.1):
+    
         super().__init__()
 
         self.bn1 = nn.BatchNorm1d(channels)
@@ -36,6 +37,7 @@ class ResidualBlock(nn.Module):
         )
 
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         # First BN -> ReLU -> Conv
@@ -46,26 +48,28 @@ class ResidualBlock(nn.Module):
         out = self.bn2(out)
         out = self.relu(out)
         out = self.conv2(out)
+        out = self.dropout(out)
         # Residual connection
         return x + out
 
 
 class SpliceAI_10k(nn.Module):
-    def __init__(self, in_channels=4, mid_channels=32, out_channels=3):
+    def __init__(self, in_channels=4, mid_channels=32, out_channels=3, dropout=0.1):
+    
         super().__init__()
 
         self.initial_conv = nn.Conv1d(in_channels, mid_channels, 1)
         self.conv11_1 = nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb11_1   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 1) for _ in range(4)])
+        self.rb11_1   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 1, dropout) for _ in range(4)])
         self.conv11_4 = nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb11_4   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 4) for _ in range(4)])
+        self.rb11_4   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 4, dropout) for _ in range(4)])
         self.conv21_10= nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb21_10  = nn.Sequential(*[ResidualBlock(mid_channels, 21, 10) for _ in range(4)])
+        self.rb21_10  = nn.Sequential(*[ResidualBlock(mid_channels, 21, 10, dropout) for _ in range(4)])
         self.conv41_25= nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb41_25  = nn.Sequential(*[ResidualBlock(mid_channels, 41, 25) for _ in range(4)])
+        self.rb41_25  = nn.Sequential(*[ResidualBlock(mid_channels, 41, 25, dropout) for _ in range(4)])
         self.final_conv1 = nn.Conv1d(mid_channels, mid_channels, 1)
         self.final_conv2 = nn.Conv1d(mid_channels, out_channels, 1)
-
+        self.dropout = nn.Dropout(dropout)
         # Two convs per block, so each ResidualBlock adds 2*(kernel_size−1)*dilation.
         # Sum over all 4 blocks in each of the four groups:
         rf  = 1  # initial 1×1 conv has RF=1
@@ -94,6 +98,7 @@ class SpliceAI_10k(nn.Module):
         x  = self.rb41_25(x)
         # final projections
         x = self.final_conv1(x) + skip
+        x = self.dropout(x)
         x = self.final_conv2(x)
         # x = F.softmax(x, dim=1)  # since CrossEntropyLoss is used, we don't need to apply softmax here
         if x.size(2) > 2 * self.crop:
@@ -101,18 +106,19 @@ class SpliceAI_10k(nn.Module):
         return x
 
 class SpliceAI_2k(nn.Module):
-    def __init__(self, in_channels=4, mid_channels=32, out_channels=3):
+    def __init__(self, in_channels=4, mid_channels=32, out_channels=3, dropout=0.1):
         super().__init__()
 
         self.initial_conv = nn.Conv1d(in_channels, mid_channels, 1)
         self.conv11_1 = nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb11_1   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 1) for _ in range(4)])
+        self.rb11_1   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 1, dropout) for _ in range(4)])
         self.conv11_4 = nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb11_4   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 4) for _ in range(4)])
+        self.rb11_4   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 4, dropout)  for _ in range(4)])
         self.conv21_10= nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb21_10  = nn.Sequential(*[ResidualBlock(mid_channels, 21, 10) for _ in range(4)])
+        self.rb21_10  = nn.Sequential(*[ResidualBlock(mid_channels, 21, 10, dropout)  for _ in range(4)])
         self.final_conv1 = nn.Conv1d(mid_channels, mid_channels, 1)
         self.final_conv2 = nn.Conv1d(mid_channels, out_channels, 1)
+        self.dropout = nn.Dropout(dropout)
 
         # Two convs per block, so each ResidualBlock adds 2*(kernel_size−1)*dilation.
         # Sum over all 4 blocks in each of the four groups:
@@ -138,6 +144,7 @@ class SpliceAI_2k(nn.Module):
         x  = self.rb21_10(x)
         # final projections
         x = self.final_conv1(x) + skip
+        x = self.dropout(x)
         x = self.final_conv2(x)
         # x = F.softmax(x, dim=1)  # since CrossEntropyLoss is used, we don't need to apply softmax here
         if x.size(2) > 2 * self.crop:
@@ -145,16 +152,18 @@ class SpliceAI_2k(nn.Module):
         return x
     
 class SpliceAI_400nt(nn.Module):
-    def __init__(self, in_channels=4, mid_channels=32, out_channels=3):
+    def __init__(self, in_channels=4, mid_channels=32, out_channels=3, dropout=0.1):
+
         super().__init__()
 
         self.initial_conv = nn.Conv1d(in_channels, mid_channels, 1)
         self.conv11_1 = nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb11_1   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 1) for _ in range(4)])
+        self.rb11_1   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 1, dropout) for _ in range(4)])
         self.conv11_4 = nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb11_4   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 4) for _ in range(4)])
+        self.rb11_4   = nn.Sequential(*[ResidualBlock(mid_channels, 11, 4, dropout) for _ in range(4)])
         self.final_conv1 = nn.Conv1d(mid_channels, mid_channels, 1)
         self.final_conv2 = nn.Conv1d(mid_channels, out_channels, 1)
+        self.dropout = nn.Dropout(dropout)
 
         # Two convs per block, so each ResidualBlock adds 2*(kernel_size−1)*dilation.
         # Sum over all 4 blocks in each of the four groups:
@@ -176,6 +185,7 @@ class SpliceAI_400nt(nn.Module):
         x  = self.rb11_4(x)
         # final projections
         x = self.final_conv1(x) + skip
+        x = self.dropout(x)
         x = self.final_conv2(x)
         # x = F.softmax(x, dim=1)  # since CrossEntropyLoss is used, we don't need to apply softmax here
         if x.size(2) > 2 * self.crop:
@@ -183,7 +193,7 @@ class SpliceAI_400nt(nn.Module):
         return x
 
 class SpliceAI_80nt(nn.Module):
-    def __init__(self, in_channels=4, mid_channels=32, out_channels=3):
+    def __init__(self, in_channels=4, mid_channels=32, out_channels=3, dropout=0.1):
         super().__init__()
 
         # initial 1x1 bottleneck
@@ -191,11 +201,12 @@ class SpliceAI_80nt(nn.Module):
         
         # single group of four 11-dilated residual blocks
         self.conv11_1 = nn.Conv1d(mid_channels, mid_channels, 1)
-        self.rb11_1 = nn.Sequential(*[ResidualBlock(mid_channels, 11, 1) for _ in range(4)])
+        self.rb11_1 = nn.Sequential(*[ResidualBlock(mid_channels, 11, 1, dropout) for _ in range(4)])
         
         # final projections
         self.final_conv1 = nn.Conv1d(mid_channels, mid_channels, 1)
         self.final_conv2 = nn.Conv1d(mid_channels, out_channels, 1)
+        self.dropout = nn.Dropout(dropout)
 
         # compute receptive field: 1 (initial) + 4 blocks * 2 convs * (11-1) * dilation=1
         rf = 1 + 4 * 2 * (11 - 1) * 1  # = 81
@@ -209,6 +220,7 @@ class SpliceAI_80nt(nn.Module):
         skip = self.conv11_1(x)
         x = self.rb11_1(x)
         x = self.final_conv1(x) + skip
+        x = self.dropout(x)
         x = self.final_conv2(x)
         # x = F.softmax(x, dim=1) # since CrossEntropyLoss is used, we don't need to apply softmax here
         # crop flanking positions so output length = input_length - 2*crop
@@ -218,10 +230,10 @@ class SpliceAI_80nt(nn.Module):
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_10k = SpliceAI_10k(in_channels=4, mid_channels=32, out_channels=3).to(device)
-    model_2k  = SpliceAI_2k(in_channels=4, mid_channels=32, out_channels=3).to(device)
-    model_400  = SpliceAI_400nt(in_channels=4, mid_channels=32, out_channels=3).to(device)
-    model_80   = SpliceAI_80nt(in_channels=4, mid_channels=32, out_channels=3).to(device)
+    model_10k = SpliceAI_10k(in_channels=4, mid_channels=32, out_channels=3, dropout=0.1).to(device)
+    model_2k  = SpliceAI_2k(in_channels=4, mid_channels=32, out_channels=3, dropout=0.1).to(device)
+    model_400  = SpliceAI_400nt(in_channels=4, mid_channels=32, out_channels=3, dropout=0.1).to(device)
+    model_80   = SpliceAI_80nt(in_channels=4, mid_channels=32, out_channels=3, dropout=0.1).to(device)
     # test the model with a short sequence
     x = torch.randn(2, 4, 5000+10_000) # (batch, in_channels, length)
     y = model_10k(x.to(device))
