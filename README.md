@@ -25,8 +25,8 @@ python3 utils/create_datasets.py \
         --fasta # reference genome - leave as "" to download
         --gff  # reference genome gff annotations - leave as "" to download
         --chrom # chromosome id map - leave as "" to download
-        --flank 5000 # 5000 if you want to run largest SpiceAI model
-        --outdir <Path to output directory
+        --flank 5000 # 5000 if you want to prepare datasets for the largest SpiceAI model
+        --outdir <Path to output directory>
 ```
 
 ### Train model
