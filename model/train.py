@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import sys
+import json
 
 import torch
 import torch.nn.functional as F
@@ -12,7 +13,7 @@ from collections import Counter
 
 from dataloader import SpliceDataset
 from model import SpliceAI_10k, SpliceAI_2k, SpliceAI_400nt, SpliceAI_80nt
-from metrics import topk_accuracy, pr_auc
+from metrics import topk_accuracy, pr_auc, to_serializable
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train SpliceAI model")
@@ -23,6 +24,7 @@ def parse_args():
     parser.add_argument("--batch_size", type=int, default=256, help="Batch size for training")
     parser.add_argument("--num_epochs", type=int, default=50, help="Number of epochs to train")
     parser.add_argument("--learning_rate", type=float, default=0.001, help="Learning rate for optimizer")
+    parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate for model")
     parser.add_argument("--flank", type=int, default=5000, help="Flank size for training data")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
     parser.add_argument("--output_dir", type=str, default="output", help="Directory to save model checkpoints")
@@ -51,15 +53,15 @@ def get_dataloader(args):
 
 def get_model(args):
     if args.flank == 5000:
-        model = SpliceAI_10k(in_channels=4, mid_channels=32, out_channels=3)
-    elif args.flank == 2000:
-        model = SpliceAI_2k(in_channels=4, mid_channels=32, out_channels=3)
-    elif args.flank == 400:
-        model = SpliceAI_400nt(in_channels=4, mid_channels=32, out_channels=3)
-    elif args.flank == 80:
-        model = SpliceAI_80nt(in_channels=4, mid_channels=32, out_channels=3)
+        model = SpliceAI_10k(in_channels=4, mid_channels=32, out_channels=3, dropout=args.dropout)
+    elif args.flank == 1000:
+        model = SpliceAI_2k(in_channels=4, mid_channels=32, out_channels=3, dropout=args.dropout)
+    elif args.flank == 200:
+        model = SpliceAI_400nt(in_channels=4, mid_channels=32, out_channels=3, dropout=args.dropout)
+    elif args.flank == 40:
+        model = SpliceAI_80nt(in_channels=4, mid_channels=32, out_channels=3, dropout=args.dropout)
     else:
-        raise ValueError("Invalid flank size. Choose from [5000, 2000, 400, 80]")
+        raise ValueError("Invalid flank size. Choose from [5000, 1000, 200, 40]")
     return model
 
 
@@ -132,14 +134,20 @@ def train(args, logger):
     logger.info("Training with num epochs: %d", args.num_epochs)
     logger.info("Training with flank size: %d", args.flank)
     logger.info("Training with random seed: %d", args.seed)
-    logger.info("Training with output directory: %s", args.output_dir)
+    logger.info("Training with output directory: %s", os.path.basename(args.output_dir))
     criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+
 
     for epoch in range(args.num_epochs):
         train_metrics = run_epoch(model, train_loader, criterion, optimizer, device, train=True)
         val_metrics = run_epoch(model, val_loader, criterion, optimizer, device, train=False)
-
+        # write train and val metrics to file as json 
+        with open(os.path.join(args.output_dir, f"epoch_{epoch + 1}_metrics.json"), "w") as f:
+            json.dump({
+                "train": to_serializable(train_metrics),
+                "val": to_serializable(val_metrics)
+            }, f, indent=4)
         logger.info("Epoch %d/%d", epoch, args.num_epochs)
         logger.info("  Train Loss: %.4f", train_metrics["loss"])
         logger.info("  Val   Loss: %.4f", val_metrics["loss"])
