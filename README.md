@@ -44,3 +44,11 @@ python3 model/train.py
 --seed 1809 
 --output_dir <Path to output directory to save model checkpoints and log file>
 ```
+
+### Result 
+
+#### Loss curves
+![Loss](./images/loss.png)
+
+#### Metrics
+![Train_Val_Metric](./images/train_val_metrics.png)
