@@ -13,7 +13,7 @@ mamba activate spliceAI
 
 ### Download datasets for training and testing the models
 
-Download from Google Cloud Storage
+Download from Google Cloud Storage (recommended)
 ```
 python3 utils/download_dataset.py
 ```
