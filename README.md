@@ -1,6 +1,8 @@
 # SpliceAI
 
 Implementation of [SpliceAI](https://www.cell.com/cell/pdf/S0092-8674(18)31629-5.pdf) models in Pytorch with added Dropout layers
+Model was trained transcripts from [hg38](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.40_GRCh38.p14/).
+For transcripts with multiple isoforms, isoform with highest number of exons was chosen for training and testing.
 
 ### Setup 
 
