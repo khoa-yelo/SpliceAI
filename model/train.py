@@ -53,6 +53,12 @@ def parse_args():
         "--flank", type=int, default=5000, help="Flank size for training data"
     )
     parser.add_argument(
+        "--use_class_weights",
+        action="store_true",
+        help="Use class weights for loss function",
+    )
+
+    parser.add_argument(
         "--seed", type=int, default=42, help="Random seed for reproducibility"
     )
     parser.add_argument(
@@ -193,6 +199,11 @@ def train(args, logger):
     logger.info("Training with flank size: %d", args.flank)
     logger.info("Training with random seed: %d", args.seed)
     logger.info("Training with output directory: %s", os.path.basename(args.output_dir))
+    if args.use_class_weights:
+        logger.info("Using class weights for loss function")
+    else:
+        logger.info("Not using class weights for loss function")
+        class_weights = None
     criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
