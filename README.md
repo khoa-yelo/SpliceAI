@@ -51,8 +51,10 @@ python3 model/train.py
 
 ### Result 
 
-#### Loss curves
+#### SpliceAI_10k model
+
+##### Loss curves
 ![Loss](./images/loss.png)
 
-#### Metrics
+##### Metrics
 ![Train_Val_Metric](./images/train_val_metrics.png)
